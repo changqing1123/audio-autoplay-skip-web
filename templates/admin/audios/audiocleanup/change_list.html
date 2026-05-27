@@ -1,0 +1,53 @@
+{% extends "admin/change_list.html" %}
+
+{% block result_list %}
+  <div class="cleanup-filter-panel">
+    <span class="cleanup-filter-label">时间筛选</span>
+    {% for item in cleanup_filter_links %}
+      <a class="cleanup-filter-link{% if item.active %} active{% endif %}" href="{{ item.url }}">{{ item.label }}</a>
+    {% endfor %}
+  </div>
+  {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    .cleanup-filter-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid #ebeef5;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .cleanup-filter-label {
+      margin-right: 4px;
+      color: #606266;
+      font-weight: 600;
+    }
+
+    .cleanup-filter-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 12px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      color: #606266;
+      text-decoration: none;
+      background: #fff;
+    }
+
+    .cleanup-filter-link:hover,
+    .cleanup-filter-link.active {
+      border-color: #409eff;
+      color: #fff;
+      background: #409eff;
+    }
+  </style>
+{% endblock %}

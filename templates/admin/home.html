@@ -1,0 +1,46 @@
+<div id="home" class="podcast-dashboard">
+  <section class="dashboard-shell">
+    <section class="dashboard-grid" aria-label="后台统计">
+      <article class="dashboard-card card-blue">
+        <div class="card-icon">今</div>
+        <div class="card-copy">
+          <span>今日已听数量</span>
+          <strong>{{ dashboard_stats.today_listened_count|default:0 }}</strong>
+        </div>
+      </article>
+
+      <article class="dashboard-card card-green">
+        <div class="card-icon">昨</div>
+        <div class="card-copy">
+          <span>昨日已听数量</span>
+          <strong>{{ dashboard_stats.yesterday_listened_count|default:0 }}</strong>
+        </div>
+      </article>
+
+      <article class="dashboard-card card-amber">
+        <div class="card-icon">音</div>
+        <div class="card-copy">
+          <span>分组下已有音频数量</span>
+          <strong>{{ dashboard_stats.audio_count|default:0 }}</strong>
+        </div>
+      </article>
+
+      <article class="dashboard-card card-red">
+        <div class="card-icon">期</div>
+        <div class="card-copy">
+          <span>超期音频数量</span>
+          <div class="expired-row">
+            <div>
+              <strong>{{ dashboard_stats.older_than_15_count|default:0 }}</strong>
+              <em>超过 15 天</em>
+            </div>
+            <div>
+              <strong>{{ dashboard_stats.older_than_30_count|default:0 }}</strong>
+              <em>超过 30 天</em>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </section>
+</div>

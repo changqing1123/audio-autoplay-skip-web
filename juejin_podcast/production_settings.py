@@ -1,0 +1,17 @@
+from .settings import *  # noqa: F401,F403
+
+DEBUG = False
+ALLOWED_HOSTS = ALLOWED_HOSTS or ['*']  # noqa: F405
+
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # noqa: F405
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'  # noqa: F405
+
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = []
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_SSL_REDIRECT = False

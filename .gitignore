@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Django runtime data
+db.sqlite3
+media/*
+!media/.gitkeep
+staticfiles/
+
+# Database exports stay local unless you intentionally share them elsewhere.
+database/*
+!database/.gitkeep
+*.sql
+*.dump
+
+# Local secrets
+.env
+*.env
+!.env.example
+
+# Frontend dependencies/build output
+frontend/node_modules/
+frontend/dist/
+
+# Deployment artifacts
+deploy/release_no_db/
+deploy/*.zip
+deploy/*_overlay_*/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
