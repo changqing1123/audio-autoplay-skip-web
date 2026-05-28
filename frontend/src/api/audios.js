@@ -5,10 +5,8 @@ export async function fetchAudios() {
   return response.data
 }
 
-export async function fetchAudioBlob(audioId) {
-  const response = await apiClient.get(`/audios/${audioId}/stream/`, {
-    responseType: 'blob',
-  })
+export async function fetchAudioPlayUrl(audioId) {
+  const response = await apiClient.get(`/audios/${audioId}/play-url/`)
   return response.data
 }
 

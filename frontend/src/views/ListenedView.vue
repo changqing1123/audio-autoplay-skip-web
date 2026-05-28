@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft } from 'lucide-vue-next'
 import { icons } from '../data/icons'
-import { currentAudio, listenedAudios, openAudio } from '../state/appState'
+import { currentAudio, listenedAudios } from '../state/appState'
 
 const router = useRouter()
 const listenedList = computed(() => listenedAudios.value)
@@ -23,11 +23,10 @@ function openCurrentPlayer() {
   router.push({ name: 'player', params: { id: currentAudio.value.id } })
 }
 
-async function openPlayer(audio = currentAudio.value) {
+function openPlayer(audio = currentAudio.value) {
   if (!audio) {
     return
   }
-  await openAudio(audio.id, false)
   router.push({ name: 'player', params: { id: audio.id } })
 }
 </script>

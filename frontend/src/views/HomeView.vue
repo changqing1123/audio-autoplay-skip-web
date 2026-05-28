@@ -8,7 +8,6 @@ import {
   currentAudio,
   homeTabs,
   miniPlayerVisible,
-  openAudio,
   playNextAudio,
   playPreviousAudio,
   seekTo,
@@ -28,7 +27,6 @@ async function openPlayer(audio = currentAudio.value, autoPlay = false) {
     return
   }
   const shouldAutoPlay = autoPlay || (state.isPlaying && currentAudio.value?.id !== audio.id)
-  await openAudio(audio.id, shouldAutoPlay)
   router.push({
     name: 'player',
     params: { id: audio.id },

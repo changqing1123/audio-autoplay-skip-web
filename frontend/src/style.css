@@ -12,6 +12,31 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus,
+a:focus {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(255, 111, 179, 0.72);
+  outline-offset: 3px;
 }
 
 body {
@@ -330,6 +355,14 @@ button.audio-info {
   width: 31px;
   height: 31px;
   color: rgba(248, 248, 251, 0.9);
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.icon-button:active {
+  filter: brightness(1.08);
+  transform: scale(0.94);
 }
 
 .icon-button img {
@@ -346,6 +379,14 @@ button.audio-info {
   height: 40px;
   border-radius: 50%;
   color: #ff6fb3;
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.main-play-button:active {
+  filter: brightness(1.08);
+  transform: scale(0.94);
 }
 
 .main-play-button img {
@@ -580,6 +621,15 @@ button.audio-info {
 .detail-play-button {
   display: grid;
   place-items: center;
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.detail-skip-button:active,
+.detail-play-button:active {
+  filter: brightness(1.08);
+  transform: scale(0.94);
 }
 
 .detail-skip-button {
@@ -609,6 +659,22 @@ button.audio-info {
   width: 58px;
   height: 58px;
   object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-button,
+  .main-play-button,
+  .detail-skip-button,
+  .detail-play-button {
+    transition: none;
+  }
+
+  .icon-button:active,
+  .main-play-button:active,
+  .detail-skip-button:active,
+  .detail-play-button:active {
+    transform: none;
+  }
 }
 
 .detail-nav {

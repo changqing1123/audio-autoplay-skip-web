@@ -1,7 +1,7 @@
 import { computed, reactive } from 'vue'
 import { fetchCurrentUser, loginWithJwt } from '../api/auth'
 import {
-  fetchAudioBlob,
+  fetchAudioPlayUrl,
   fetchAudios,
   fetchListenedIds,
   fetchListenedList,
@@ -44,9 +44,9 @@ const state = reactive({
 export { state }
 
 let audioElement = null
-let audioObjectUrl = null
 let activeSourceAudioId = null
 let activeLoadToken = 0
+let nextLoadToken = 0
 let lastProgressSavedAt = 0
 let pendingAutoPlay = false
 
@@ -101,6 +101,7 @@ function normalizeAudio(item) {
     groupName: item.group_name || state.user?.business_group || '默认分组',
     groupWeight: Number(item.group_weight || 100),
     groupCoverUrl: item.group_cover_url || '',
+    playUrl: item.play_url || '',
   }
 }
 
@@ -168,6 +169,7 @@ function decorateListenedItem(item) {
     uploadTime: item.upload_time,
     groupName: item.group_name || '',
     groupWeight: Number(item.group_weight || 100),
+    playUrl: item.play_url || '',
     listenedTime: item.listened_time,
     date: formatDate(item.upload_time),
     listenedDate: formatDate(item.listened_time),
@@ -199,18 +201,32 @@ function chooseCurrentAudioId() {
   return firstUnfinished?.id || state.rawAudios[0]?.id || null
 }
 
-function revokeAudioObjectUrl() {
-  if (audioObjectUrl) {
-    URL.revokeObjectURL(audioObjectUrl)
-    audioObjectUrl = null
-  }
-}
-
 function resetPlaybackState() {
   state.currentTime = 0
   state.duration = 0
   state.isPlaying = false
   state.audioError = ''
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchAudioPlayUrlWithRetry(audioId) {
+  try {
+    return await fetchAudioPlayUrl(audioId)
+  } catch (error) {
+    const status = error?.response?.status
+    if (status && status < 500) {
+      throw error
+    }
+    await sleep(250)
+    return fetchAudioPlayUrl(audioId)
+  }
+}
+
+function getCachedPlayUrl(audioId) {
+  return state.rawAudios.find((audio) => audio.id === audioId)?.playUrl || ''
 }
 
 async function loadCurrentAudioSource(autoPlay = false) {
@@ -226,29 +242,35 @@ async function loadCurrentAudioSource(autoPlay = false) {
     return
   }
 
-  const loadToken = Date.now()
+  const loadToken = ++nextLoadToken
   activeLoadToken = loadToken
+  if (audioElement.src) {
+    audioElement.pause()
+    audioElement.removeAttribute('src')
+    audioElement.load()
+  }
   state.audioLoading = true
   state.audioError = ''
   pendingAutoPlay = autoPlay
 
   try {
-    const blob = await fetchAudioBlob(current.id)
+    const cachedPlayUrl = getCachedPlayUrl(current.id)
+    const response = cachedPlayUrl ? null : await fetchAudioPlayUrlWithRetry(current.id)
     if (activeLoadToken !== loadToken) {
       return
     }
-    const normalizedBlob = blob.type ? blob : new Blob([blob], { type: 'audio/mpeg' })
-    revokeAudioObjectUrl()
-    audioObjectUrl = URL.createObjectURL(normalizedBlob)
+    const streamUrl = cachedPlayUrl || response?.data?.stream_url
+    if (!streamUrl) {
+      throw new Error('missing-stream-url')
+    }
     activeSourceAudioId = current.id
-    audioElement.src = audioObjectUrl
+    audioElement.src = streamUrl
     audioElement.load()
   } catch {
     if (activeLoadToken === loadToken) {
       activeSourceAudioId = null
       state.audioError = '音频流加载失败，请检查音频文件或后端接口'
       pendingAutoPlay = false
-      revokeAudioObjectUrl()
     }
   } finally {
     if (activeLoadToken === loadToken) {
@@ -425,7 +447,6 @@ export function clearSession() {
   resetPlaybackState()
   activeSourceAudioId = null
   pendingAutoPlay = false
-  revokeAudioObjectUrl()
   if (audioElement) {
     audioElement.pause()
     audioElement.removeAttribute('src')
@@ -479,6 +500,9 @@ export async function openAudio(audioId, autoPlay = false) {
   const shouldAutoPlay = autoPlay || (state.isPlaying && previousAudioId !== audioId)
   const hasCurrentSource = Boolean(audioElement && activeSourceAudioId === audioId && audioElement.src)
   const keepCurrentPlayback = previousAudioId === audioId && hasCurrentSource && !audioElement.ended
+  if (previousAudioId && previousAudioId !== audioId) {
+    persistCurrentProgress()
+  }
   setCurrentAudioId(audioId)
   const saved = getSavedProgress(audioId)
   const replayFromBeginning = state.listenedIds.includes(audioId) && !keepCurrentPlayback
