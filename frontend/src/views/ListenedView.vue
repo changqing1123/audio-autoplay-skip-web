@@ -37,13 +37,13 @@ function openPlayer(audio = currentAudio.value) {
       <button class="back-button" type="button" aria-label="返回设置" @click="backToSettings">
         <ChevronLeft :size="26" :stroke-width="2.6" />
       </button>
-      <h1>已听歌曲</h1>
+      <h1>已听播客</h1>
     </header>
 
     <section v-if="listenedList.length === 0" class="page-state" aria-label="空状态">
       当前还没有已听记录
     </section>
-    <section v-else class="audio-list listened-audio-list" aria-label="已听歌曲列表">
+    <section v-else class="audio-list listened-audio-list" aria-label="已听播客列表">
       <article
         v-for="audio in listenedList"
         :key="audio.id"

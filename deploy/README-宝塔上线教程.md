@@ -11,7 +11,8 @@
 目标效果：
 
 - 访问 `http://你的域名/` 进入 Vue 前台
-- 访问 `http://你的域名/admin/` 进入 Django 管理后台
+- 访问 `https://你的域名/` 进入 Vue 前台
+- 访问 `https://你的域名/admin/` 进入 Django 管理后台
 
 ## 一、准备工作：确认数据库
 
@@ -88,14 +89,19 @@
 2. 添加 HTML 站点，域名填写你的域名。
 3. 网站根目录选择：
    - `/www/wwwroot/juejin_podcast_frontend`
-4. 打开这个站点的「配置文件」。
-5. 删除原配置内容。
-6. 用部署包里的 `nginx-site.conf` 内容整体粘贴进去。
-7. 把配置里的 `你的域名` 改成你的真实域名。
-8. 保存。
+4. 如果要开启 SSL，先在宝塔 SSL 页面申请并部署证书。
+5. 打开这个站点的「配置文件」。
+6. 备份原配置内容，然后用部署包里的 `nginx-site.conf` 内容整体粘贴进去。
+7. 把配置里的 `your-domain.com` 改成你的真实域名。
+8. 确认证书路径和宝塔 SSL 页面里的实际证书路径一致：
+   - `ssl_certificate`
+   - `ssl_certificate_key`
+9. 保存。
 
 配置里已经包含：
 
+- `80` 自动跳转到 `443`
+- `/.well-known/acme-challenge/` 支持宝塔 SSL 文件验证
 - `/` 指向 Vue 前台
 - `/api/` 反向代理到 Django API
 - `/admin/` 反向代理到 Django 管理后台
@@ -111,17 +117,32 @@
 
 ## 六、上线后检查
 
-1. 访问 `http://你的域名/`，应进入前台。
-2. 登录账号，确认能进入首页。
-3. 点击音频，确认可以播放。
-4. 访问 `http://你的域名/admin/`，确认可以进入后台。
-5. 后台上传音频，确认文件能进入 `media` 目录。
+1. 访问 `http://你的域名/`。
+2. 浏览器会自动跳转到 `https://你的域名/`。
+3. 登录账号，确认能进入首页。
+4. 点击音频，确认可以播放。
+5. 访问 `https://你的域名/admin/`，确认可以进入后台。
+6. 后台上传音频，确认文件能进入 `media` 目录。
 
 ## 常见问题
 
 ### 访问 `/admin/` 显示 502
 
 说明 Nginx 找不到 Django 服务。检查 Python 项目是否启动，端口是否是 `8000`。
+
+### HTTPS 访问首页显示 `Cannot GET /`
+
+说明 `443` 的 HTTPS 配置把 `/` 转发到了后端，而不是指向 Vue 前端静态目录。检查 Nginx 配置里 `listen 443 ssl` 这个 `server` 是否包含：
+
+```nginx
+root /www/wwwroot/juejin_podcast_frontend;
+
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+同时确认只有 `/api/` 和 `/admin/` 代理到 `127.0.0.1:8000`。
 
 ### 后台 Internal Server Error
 

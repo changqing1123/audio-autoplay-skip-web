@@ -18,6 +18,18 @@ const SAVE_INTERVAL_KEY = 'juejin_save_interval'
 const SHOW_LISTENED_KEY = 'juejin_show_listened'
 const SELECTED_TAB_KEY = 'juejin_selected_tab'
 const MINI_PLAYER_CLOSED_KEY = 'juejin_mini_player_closed'
+const PLAYBACK_RATE_KEY = 'juejin_playback_rate'
+
+export const playbackRates = [1, 1.5, 2, 2.5, 3]
+
+function normalizePlaybackRate(rate) {
+  const numericRate = Number(rate)
+  return playbackRates.includes(numericRate) ? numericRate : 1
+}
+
+function getSavedPlaybackRate() {
+  return normalizePlaybackRate(localStorage.getItem(PLAYBACK_RATE_KEY) || 1)
+}
 
 const state = reactive({
   initialized: false,
@@ -35,9 +47,10 @@ const state = reactive({
   duration: 0,
   isPlaying: false,
   saveInterval: Number(localStorage.getItem(SAVE_INTERVAL_KEY) || 15),
-  showListened: localStorage.getItem(SHOW_LISTENED_KEY) !== 'false',
+  showListened: localStorage.getItem(SHOW_LISTENED_KEY) === 'true',
   selectedTab: localStorage.getItem(SELECTED_TAB_KEY) || 'all',
   miniPlayerClosed: localStorage.getItem(MINI_PLAYER_CLOSED_KEY) === 'true',
+  playbackRate: getSavedPlaybackRate(),
   progressCache: loadProgressCache(),
 })
 
@@ -266,10 +279,11 @@ async function loadCurrentAudioSource(autoPlay = false) {
     activeSourceAudioId = current.id
     audioElement.src = streamUrl
     audioElement.load()
+    applyPlaybackRate()
   } catch {
     if (activeLoadToken === loadToken) {
       activeSourceAudioId = null
-      state.audioError = '音频流加载失败，请检查音频文件或后端接口'
+      state.audioError = '播客音频流加载失败，请检查音频文件或后端接口'
       pendingAutoPlay = false
     }
   } finally {
@@ -301,11 +315,17 @@ function pauseElement() {
   state.isPlaying = false
 }
 
+function applyPlaybackRate() {
+  if (audioElement) {
+    audioElement.playbackRate = state.playbackRate
+  }
+}
+
 export const audios = computed(() => state.rawAudios.map(decorateAudio))
 export const currentAudio = computed(() => audios.value.find((audio) => audio.id === state.currentAudioId) || null)
 export const listenedAudios = computed(() => state.listenedItems.map(decorateListenedItem))
 export const homeTabs = computed(() => {
-  const tabs = [{ id: 'all', label: '所有音频' }]
+  const tabs = [{ id: 'all', label: '所有播客' }]
   const groups = new Map()
   audios.value.forEach((audio) => {
     if (!audio.groupName) {
@@ -350,6 +370,7 @@ export const isAuthenticated = computed(() => Boolean(state.user) && hasAccessTo
 
 export function registerAudioElement(element) {
   audioElement = element
+  applyPlaybackRate()
   if (audioElement && currentAudio.value) {
     loadCurrentAudioSource(false)
   }
@@ -428,7 +449,7 @@ export async function login(username, password) {
     clearTokens()
     state.loginError = error?.response?.status
       ? `登录成功，但初始化数据失败（${error.response.status}）`
-      : '登录成功，但无法获取用户或音频数据'
+      : '登录成功，但无法获取用户或播客数据'
     throw new Error('post-login-init-failed')
   } finally {
     state.authLoading = false
@@ -469,6 +490,12 @@ export function updateSaveInterval(value) {
 export function toggleShowListened() {
   state.showListened = !state.showListened
   localStorage.setItem(SHOW_LISTENED_KEY, String(state.showListened))
+}
+
+export function setPlaybackRate(rate) {
+  state.playbackRate = normalizePlaybackRate(rate)
+  localStorage.setItem(PLAYBACK_RATE_KEY, String(state.playbackRate))
+  applyPlaybackRate()
 }
 
 export function setSelectedTab(tabId) {
@@ -587,6 +614,7 @@ export function onLoadedMetadata() {
   if (!audioElement || !currentAudio.value) {
     return
   }
+  applyPlaybackRate()
   const saved = getSavedProgress(currentAudio.value.id)
   const duration = Number(audioElement.duration || currentAudio.value.durationSeconds || saved.duration || 0)
   state.duration = duration
@@ -641,7 +669,7 @@ export function onPause() {
 export function onAudioError() {
   state.audioLoading = false
   state.isPlaying = false
-  state.audioError = '音频播放失败，请确认文件格式和音频流是否可用'
+  state.audioError = '播客播放失败，请确认文件格式和音频流是否可用'
 }
 
 function clearSavedProgress(audioId) {

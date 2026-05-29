@@ -60,7 +60,7 @@ function handleMiniSeek(event) {
 
 <template>
   <div class="phone-page home-page">
-    <nav class="category-tabs" aria-label="音频分类">
+    <nav class="category-tabs" aria-label="播客分类">
       <button
         v-for="tab in homeTabs"
         :key="tab.id"
@@ -74,12 +74,12 @@ function handleMiniSeek(event) {
     </nav>
 
     <section v-if="state.dataLoading" class="page-state" aria-label="加载中">
-      正在加载音频列表...
+      正在加载播客列表...
     </section>
     <section v-else-if="homeAudios.length === 0" class="page-state" aria-label="空状态">
-      当前分类下还没有可播放的音频
+      当前分类下还没有可播放的播客
     </section>
-    <section v-else class="audio-list" aria-label="音频列表">
+    <section v-else class="audio-list" aria-label="播客列表">
       <article
         v-for="audio in homeAudios"
         :key="audio.id"
@@ -132,13 +132,13 @@ function handleMiniSeek(event) {
           <span>{{ currentAudio.date }}</span>
         </span>
         <span class="mini-controls" aria-label="播放控制">
-          <button class="icon-button" type="button" aria-label="上一首" @click.stop="playPreviousAudio">
+          <button class="icon-button" type="button" aria-label="上一期" @click.stop="playPreviousAudio">
             <img :src="icons.controlPrev" alt="" />
           </button>
           <button class="main-play-button" type="button" :aria-label="state.isPlaying ? '暂停' : '播放'" @click.stop="togglePlayback">
             <img :src="miniPlayButtonIcon" alt="" />
           </button>
-          <button class="icon-button" type="button" aria-label="下一首" @click.stop="playNextAudio">
+          <button class="icon-button" type="button" aria-label="下一期" @click.stop="playNextAudio">
             <img :src="icons.controlNext" alt="" />
           </button>
         </span>

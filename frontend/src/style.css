@@ -495,7 +495,7 @@ button.audio-info {
 .player-page {
   display: flex;
   flex-direction: column;
-  padding: 0 22px 84px;
+  padding: 18px 22px 84px;
 }
 
 .player-header {
@@ -523,7 +523,7 @@ button.audio-info {
   width: min(52vw, 222px);
   max-width: 222px;
   aspect-ratio: 1;
-  margin-top: clamp(12px, 3svh, 28px);
+  margin-top: clamp(8px, 3svh, 24px);
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 28px 42px rgba(0, 0, 0, 0.1);
@@ -531,7 +531,7 @@ button.audio-info {
 
 .player-copy {
   width: 100%;
-  margin-top: clamp(34px, 7svh, 86px);
+  margin-top: clamp(28px, 6svh, 68px);
   text-align: center;
 }
 
@@ -547,16 +547,91 @@ button.audio-info {
 
 .player-copy time {
   display: block;
-  margin-top: 20px;
+  margin-top: 10px;
   color: rgba(248, 248, 251, 0.72);
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0;
 }
 
 .detail-progress {
   width: 100%;
-  margin-top: clamp(34px, 7svh, 74px);
+  margin-top: clamp(22px, 4svh, 44px);
+}
+
+.detail-progress-head {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 26px;
+  margin-bottom: 14px;
+}
+
+.playback-rate-menu {
+  position: relative;
+  z-index: 2;
+}
+
+.playback-rate-trigger,
+.playback-rate-option {
+  height: 26px;
+  border: 1px solid rgba(248, 248, 251, 0.12);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 24px;
+}
+
+.playback-rate-trigger {
+  min-width: 58px;
+  padding: 0 8px;
+  border-color: rgba(255, 111, 179, 0.88);
+  color: #ff84bd;
+  background: transparent;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+.playback-rate-options {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  display: flex;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 112px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.playback-rate-options::-webkit-scrollbar {
+  display: none;
+}
+
+.playback-rate-option {
+  flex: 0 0 auto;
+  min-width: 50px;
+  padding: 0 6px;
+  color: rgba(248, 248, 251, 0.72);
+  background: rgba(21, 24, 39, 0.98);
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.playback-rate-option.active {
+  border-color: rgba(255, 111, 179, 0.84);
+  color: #ff84bd;
+  background: rgba(255, 111, 179, 0.08);
+}
+
+.playback-rate-trigger:active,
+.playback-rate-option:active {
+  transform: scale(0.96);
 }
 
 .detail-progress-track {
@@ -598,9 +673,9 @@ button.audio-info {
 .detail-times {
   display: flex;
   justify-content: space-between;
-  margin-top: 17px;
+  margin-top: 7px;
   color: rgba(248, 248, 251, 0.72);
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -609,7 +684,7 @@ button.audio-info {
   grid-template-columns: 54px 58px 54px;
   align-items: center;
   justify-content: space-between;
-  width: min(100%, 330px);
+  width: min(100%, 286px);
   margin: clamp(26px, 5svh, 44px) auto clamp(24px, 5svh, 52px);
 }
 
@@ -665,14 +740,18 @@ button.audio-info {
   .icon-button,
   .main-play-button,
   .detail-skip-button,
-  .detail-play-button {
+  .detail-play-button,
+  .playback-rate-trigger,
+  .playback-rate-option {
     transition: none;
   }
 
   .icon-button:active,
   .main-play-button:active,
   .detail-skip-button:active,
-  .detail-play-button:active {
+  .detail-play-button:active,
+  .playback-rate-trigger:active,
+  .playback-rate-option:active {
     transform: none;
   }
 }
@@ -1067,15 +1146,31 @@ button.audio-info {
   }
 
   .player-cover {
-    margin-top: 18px;
+    margin-top: 10px;
   }
 
   .player-copy {
-    margin-top: 76px;
+    margin-top: 42px;
   }
 
   .player-controls {
-    margin-top: 42px;
+    margin-top: 34px;
+  }
+
+  .playback-rate-trigger {
+    min-width: 54px;
+    padding: 0 5px;
+    font-size: 11px;
+  }
+
+  .playback-rate-options {
+    max-width: calc(100vw - 100px);
+  }
+
+  .playback-rate-option {
+    min-width: 46px;
+    padding: 0 5px;
+    font-size: 11px;
   }
 }
 
@@ -1108,17 +1203,21 @@ button.audio-info {
   }
 
   .player-copy time {
-    margin-top: 12px;
-    font-size: 16px;
+    margin-top: 8px;
+    font-size: 13px;
   }
 
   .detail-progress {
-    margin-top: 28px;
+    margin-top: 20px;
+  }
+
+  .detail-progress-head {
+    margin-bottom: 12px;
   }
 
   .detail-times {
-    margin-top: 12px;
-    font-size: 14px;
+    margin-top: 6px;
+    font-size: 11px;
   }
 
   .player-controls {

@@ -71,7 +71,7 @@ function openListened() {
           <Music :size="34" :stroke-width="2.5" />
         </div>
         <h1>登录</h1>
-        <p>登录后查看所属分组音频、已听列表和播放设置。</p>
+        <p>登录后查看所属分组播客、已听列表和播放设置。</p>
 
         <form class="login-form" @submit.prevent="submitLogin">
           <label class="field-row">
@@ -101,7 +101,7 @@ function openListened() {
         </div>
         <div class="profile-copy">
           <strong>{{ displayName }}</strong>
-          <span>{{ groupName }} · 已听 {{ listenedCount }} 首</span>
+          <span>{{ groupName }} · 已听 {{ listenedCount }} 期</span>
         </div>
       </section>
 
@@ -109,7 +109,7 @@ function openListened() {
         <button class="settings-row menu-row" type="button" @click="openListened">
           <img class="setting-icon-img" :src="icons.iconListenedList" alt="" />
           <span>
-            <strong>已听歌曲</strong>
+            <strong>已听播客</strong>
             <small>查看完整已听列表</small>
           </span>
           <ChevronRight :size="18" />
@@ -150,7 +150,7 @@ function openListened() {
           <button class="settings-row" type="button" @click="toggleShowListened">
             <Eye :size="22" />
             <span>
-              <strong>首页显示已听歌曲</strong>
+              <strong>首页显示已听播客</strong>
               <small>{{ state.showListened ? '显示' : '隐藏' }}</small>
             </span>
             <span class="toggle-pill" :class="{ active: state.showListened }"><i></i></span>
