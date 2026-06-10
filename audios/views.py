@@ -5,16 +5,19 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import permissions, status
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import ListAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import UserGroupMembership
 
-from .models import Audio, UserListened
+from .models import Audio, AudioUploadToken, UserListened
 from .playback import PLAY_TOKEN_MAX_AGE_SECONDS, get_user_from_play_token, make_play_token
-from .serializers import AudioListSerializer, MarkListenedSerializer, UserListenedSerializer
+from .serializers import AudioListSerializer, AudioUploadSerializer, MarkListenedSerializer, UserListenedSerializer
 
 
 RANGE_RE = re.compile(r'^bytes=(\d*)-(\d*)$')
@@ -199,6 +202,44 @@ class AudioStreamView(APIView):
         if not audio.file:
             raise Http404('Audio file not found.')
         return build_audio_stream_response(audio, request)
+
+
+class AudioUploadView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_upload_token(self, request):
+        raw_token = request.headers.get('X-Upload-Token', '').strip()
+        if not raw_token:
+            raise AuthenticationFailed('上传 Token 不能为空。')
+
+        token_hash = AudioUploadToken.hash_token(raw_token)
+        upload_token = (
+            AudioUploadToken.objects.select_related('group')
+            .filter(token_hash=token_hash, is_active=True)
+            .first()
+        )
+        if not upload_token:
+            raise AuthenticationFailed('上传 Token 无效或已停用。')
+        return upload_token
+
+    def post(self, request):
+        upload_token = self.get_upload_token(request)
+        serializer = AudioUploadSerializer(data=request.data, context={'upload_token': upload_token})
+        serializer.is_valid(raise_exception=True)
+        audio = serializer.save()
+        AudioUploadToken.objects.filter(pk=upload_token.pk).update(last_used_at=timezone.now())
+        data = {
+            'id': audio.id,
+            'filename': audio.filename,
+            'group': audio.group_id,
+            'group_name': audio.group.name,
+            'duration': audio.duration,
+            'file_size': audio.file_size,
+            'upload_time': audio.upload_time,
+        }
+        return api_success(data, message='上传成功', status_code=status.HTTP_201_CREATED)
 
 
 class ListenedIdsView(APIView):

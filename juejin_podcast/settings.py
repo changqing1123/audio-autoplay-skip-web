@@ -208,6 +208,11 @@ SIMPLEUI_CONFIG = {
                     'icon': 'fas fa-user',
                     'url': '/admin/accounts/manageduser/',
                 },
+                {
+                    'name': '上传 Token',
+                    'icon': 'fas fa-key',
+                    'url': '/admin/audios/audiouploadtoken/',
+                },
             ],
         },
         {
@@ -243,4 +248,5 @@ SIMPLEUI_ICON = {
     'audios.Audio': 'fas fa-file-audio',
     'audios.AudioCleanup': 'fas fa-filter',
     'audios.UserListened': 'fas fa-clock-rotate-left',
+    'audios.AudioUploadToken': 'fas fa-key',
 }

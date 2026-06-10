@@ -1,10 +1,19 @@
 from django.urls import path
 
-from .views import AudioListView, AudioPlayUrlView, AudioStreamView, ListenedIdsView, ListenedListView, MarkListenedView
+from .views import (
+    AudioListView,
+    AudioPlayUrlView,
+    AudioStreamView,
+    AudioUploadView,
+    ListenedIdsView,
+    ListenedListView,
+    MarkListenedView,
+)
 
 
 urlpatterns = [
     path('audios/', AudioListView.as_view(), name='audio-list'),
+    path('audios/upload/', AudioUploadView.as_view(), name='audio-upload'),
     path('audios/<int:pk>/play-url/', AudioPlayUrlView.as_view(), name='audio-play-url'),
     path('audios/<int:pk>/stream/', AudioStreamView.as_view(), name='audio-stream'),
     path('listened/ids/', ListenedIdsView.as_view(), name='listened-ids'),

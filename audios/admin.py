@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.views.main import ERROR_FLAG
+from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.db.models import Count
 from django.http import HttpResponseRedirect
@@ -7,7 +8,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from datetime import timedelta
 
-from .models import Audio, AudioCleanup, UserListened
+from .models import Audio, AudioCleanup, AudioUploadToken, UserListened
 
 
 class UploadTimeOlderThanFilter(admin.SimpleListFilter):
@@ -153,3 +154,49 @@ class UserListenedAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(AudioUploadToken)
+class AudioUploadTokenAdmin(admin.ModelAdmin):
+    list_display = ('name', 'group', 'is_active', 'created_at', 'last_used_at')
+    list_filter = ('is_active', 'group', 'created_at')
+    search_fields = ('name', 'group__name')
+    readonly_fields = ('token_notice', 'created_at', 'last_used_at')
+    fields = ('name', 'group', 'is_active', 'token_notice', 'created_at', 'last_used_at')
+    ordering = ('-created_at', '-id')
+
+    @admin.display(description='Token 说明')
+    def token_notice(self, obj):
+        if obj and obj.pk:
+            return '明文 Token 只在新建保存后显示一次。如已丢失，请删除后重新创建。'
+        return '保存后会自动生成上传 Token，明文只显示一次，请立即复制到本地脚本。'
+
+    def save_model(self, request, obj, form, change):
+        raw_token = None
+        if not change or not obj.token_hash:
+            raw_token = AudioUploadToken.generate_raw_token()
+            obj.set_raw_token(raw_token)
+        super().save_model(request, obj, form, change)
+        if raw_token:
+            self.message_user(
+                request,
+                format_html(
+                    '<div style="line-height:1.8;">'
+                    '<strong>上传 Token 已生成，仅显示一次，请立即复制：</strong>'
+                    '<div style="display:flex;gap:8px;align-items:center;max-width:760px;margin-top:6px;">'
+                    '<input id="audio-upload-token-value" value="{}" readonly '
+                    'style="flex:1;min-width:0;padding:6px 8px;border:1px solid #dcdfe6;border-radius:4px;'
+                    'font-family:monospace;font-size:13px;" />'
+                    '<button type="button" '
+                    'onclick="var input=document.getElementById(\'audio-upload-token-value\');'
+                    'if(navigator.clipboard&&window.isSecureContext){{navigator.clipboard.writeText(input.value);}}'
+                    'else{{input.focus();input.select();document.execCommand(\'copy\');}}'
+                    'this.innerText=\'已复制\';return false;" '
+                    'style="height:32px;padding:0 12px;border:0;border-radius:4px;background:#409eff;color:#fff;cursor:pointer;">'
+                    '一键复制</button>'
+                    '</div>'
+                    '</div>',
+                    raw_token,
+                ),
+                level=messages.WARNING,
+            )

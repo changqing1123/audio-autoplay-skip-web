@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import secrets
 from pathlib import Path
 
 from django.conf import settings
@@ -101,6 +103,43 @@ class Audio(models.Model):
             storage.delete(file_name)
         if cover_storage and cover_name:
             cover_storage.delete(cover_name)
+
+
+class AudioUploadToken(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Token 名称')
+    token_hash = models.CharField(max_length=64, unique=True, editable=False, blank=True, verbose_name='Token 哈希')
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='audio_upload_tokens',
+        verbose_name='绑定分组',
+    )
+    is_active = models.BooleanField(default=True, verbose_name='启用')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    last_used_at = models.DateTimeField(blank=True, null=True, verbose_name='最后使用时间')
+
+    class Meta:
+        verbose_name = '上传 Token'
+        verbose_name_plural = '上传 Token'
+        ordering = ('-created_at', '-id')
+        indexes = [
+            models.Index(fields=['token_hash'], name='upload_token_hash_idx'),
+            models.Index(fields=['group', 'is_active'], name='upload_token_group_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.name} - {self.group.name}'
+
+    @staticmethod
+    def generate_raw_token():
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def hash_token(raw_token):
+        return hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+
+    def set_raw_token(self, raw_token):
+        self.token_hash = self.hash_token(raw_token)
 
 
 class AudioCleanup(Audio):
