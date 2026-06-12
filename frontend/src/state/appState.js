@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+﻿import { computed, reactive } from 'vue'
 import { fetchCurrentUser, loginWithJwt } from '../api/auth'
 import {
   fetchAudioPlayUrl,
@@ -62,6 +62,9 @@ let activeLoadToken = 0
 let nextLoadToken = 0
 let lastProgressSavedAt = 0
 let pendingAutoPlay = false
+let desiredPlaying = false
+let restorePlaybackTimer = null
+let mediaSessionRegistered = false
 
 function loadProgressCache() {
   try {
@@ -294,6 +297,7 @@ async function loadCurrentAudioSource(autoPlay = false) {
 }
 
 async function playElement() {
+  desiredPlaying = true
   if (!audioElement) {
     return
   }
@@ -303,11 +307,13 @@ async function playElement() {
     state.audioError = ''
   } catch {
     state.isPlaying = false
+    desiredPlaying = false
     state.audioError = '浏览器阻止了自动播放，请再次点击播放按钮'
   }
 }
 
 function pauseElement() {
+  desiredPlaying = false
   if (!audioElement) {
     return
   }
@@ -371,6 +377,8 @@ export const isAuthenticated = computed(() => Boolean(state.user) && hasAccessTo
 export function registerAudioElement(element) {
   audioElement = element
   applyPlaybackRate()
+  setupPlaybackResilience()
+  updateMediaSession()
   if (audioElement && currentAudio.value) {
     loadCurrentAudioSource(false)
   }
@@ -468,6 +476,8 @@ export function clearSession() {
   resetPlaybackState()
   activeSourceAudioId = null
   pendingAutoPlay = false
+  desiredPlaying = false
+  clearRestorePlaybackTimer()
   if (audioElement) {
     audioElement.pause()
     audioElement.removeAttribute('src')
@@ -582,8 +592,10 @@ export async function playNextAudio() {
   }
 }
 
-function findFirstUnfinishedAudio() {
-  return state.rawAudios.find((audio) => !state.listenedIds.includes(audio.id)) || null
+function findNextUnfinishedAudio(currentId) {
+  return state.rawAudios.find(
+    (audio) => audio.id !== currentId && !state.listenedIds.includes(audio.id),
+  ) || null
 }
 
 export async function playPreviousAudio() {
@@ -610,11 +622,88 @@ export function seekTo(seconds) {
   persistCurrentProgress()
 }
 
+function clearRestorePlaybackTimer() {
+  if (restorePlaybackTimer) {
+    clearTimeout(restorePlaybackTimer)
+    restorePlaybackTimer = null
+  }
+}
+
+function canRestorePlayback() {
+  return Boolean(audioElement && currentAudio.value && desiredPlaying && !audioElement.ended)
+}
+
+function schedulePlaybackRestore(delay = 800) {
+  if (!canRestorePlayback()) {
+    return
+  }
+  clearRestorePlaybackTimer()
+  restorePlaybackTimer = setTimeout(async () => {
+    restorePlaybackTimer = null
+    if (!canRestorePlayback()) {
+      return
+    }
+    try {
+      await audioElement.play()
+      state.isPlaying = true
+      state.audioError = ''
+    } catch {
+      state.isPlaying = false
+    }
+  }, delay)
+}
+
+function setupPlaybackResilience() {
+  if (mediaSessionRegistered || typeof document === 'undefined') {
+    return
+  }
+  mediaSessionRegistered = true
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      schedulePlaybackRestore(200)
+    }
+  })
+  window.addEventListener('pageshow', () => schedulePlaybackRestore(200))
+  window.addEventListener('focus', () => schedulePlaybackRestore(200))
+}
+
+function updateMediaSession() {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !currentAudio.value) {
+    return
+  }
+  const current = currentAudio.value
+  if (typeof MediaMetadata !== 'undefined') {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: current.title || current.filename || 'Podcast',
+      artist: current.groupName || 'Audio',
+      album: 'Audio',
+      artwork: current.cover ? [{ src: current.cover, sizes: '512x512', type: 'image/png' }] : [],
+    })
+  }
+  try {
+    navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused'
+    navigator.mediaSession.setActionHandler('play', () => {
+      playElement()
+    })
+    navigator.mediaSession.setActionHandler('pause', () => {
+      pauseElement()
+    })
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      playPreviousAudio()
+    })
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      playNextAudio()
+    })
+  } catch {
+  }
+}
+
 export function onLoadedMetadata() {
   if (!audioElement || !currentAudio.value) {
     return
   }
   applyPlaybackRate()
+  updateMediaSession()
   const saved = getSavedProgress(currentAudio.value.id)
   const duration = Number(audioElement.duration || currentAudio.value.durationSeconds || saved.duration || 0)
   state.duration = duration
@@ -658,17 +747,44 @@ export function onTimeUpdate() {
 }
 
 export function onPlay() {
+  desiredPlaying = true
   state.isPlaying = true
+  updateMediaSession()
 }
 
 export function onPause() {
   state.isPlaying = false
   persistCurrentProgress()
+  updateMediaSession()
+  schedulePlaybackRestore()
+}
+
+export function onAudioPlaying() {
+  clearRestorePlaybackTimer()
+  desiredPlaying = true
+  state.isPlaying = true
+  state.audioError = ''
+  updateMediaSession()
+}
+
+export function onAudioWaiting() {
+  schedulePlaybackRestore(1200)
+}
+
+export function onAudioStalled() {
+  schedulePlaybackRestore(1200)
+}
+
+export function onAudioSuspend() {
+  schedulePlaybackRestore(1200)
 }
 
 export function onAudioError() {
   state.audioLoading = false
   state.isPlaying = false
+  desiredPlaying = false
+  clearRestorePlaybackTimer()
+  updateMediaSession()
   state.audioError = '播客播放失败，请确认文件格式和音频流是否可用'
 }
 
@@ -682,14 +798,23 @@ export async function onEnded() {
   if (!finishedAudio) {
     return
   }
+
+  const nextAudio = findNextUnfinishedAudio(finishedAudio.id)
   clearSavedProgress(finishedAudio.id)
-  await markAudioListened(finishedAudio.id)
-  await syncAuthenticatedState()
-  const nextAudio = findFirstUnfinishedAudio()
+
   if (nextAudio) {
     await openAudio(nextAudio.id, true)
   } else {
     pauseElement()
+  }
+
+  try {
+    await markAudioListened(finishedAudio.id)
+    if (!state.listenedIds.includes(finishedAudio.id)) {
+      state.listenedIds = [...state.listenedIds, finishedAudio.id]
+    }
+    await syncAuthenticatedState()
+  } catch {
   }
 }
 
@@ -704,3 +829,4 @@ export function persistCurrentProgress() {
   }
   persistProgressCache()
 }
+

@@ -67,7 +67,13 @@ button {
 }
 
 .global-audio-element {
-  display: none;
+  position: fixed;
+  left: -9999px;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .phone-page {
